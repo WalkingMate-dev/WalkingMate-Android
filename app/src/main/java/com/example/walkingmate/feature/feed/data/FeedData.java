@@ -22,7 +22,7 @@ import java.util.Locale;
 
 //경로 추적을 통해 저장된 데이터
 //피드를 올리기 전에 앱 내부저장소에 보관함
-public class FeedData extends Activity {
+public class FeedData {
     public ArrayList<LatLng> coordList; //경로추적 좌표
     public ArrayList<Marker> markerList; //마커, 좌표와 캡션(메모)가 포함됨
     public String[] timecheck;//시작, 종료시간. [0]이 시작, [1]이 종료
