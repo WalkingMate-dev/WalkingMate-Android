@@ -27,6 +27,8 @@ import com.daimajia.androidanimations.library.YoYo;
 import com.example.walkingmate.BuildConfig;
 import com.example.walkingmate.R;
 import com.example.walkingmate.core.security.PasswordSecurity;
+import com.example.walkingmate.feature.auth.data.NaverUserClient;
+import com.example.walkingmate.feature.auth.data.StartUserDataFactory;
 import com.example.walkingmate.feature.auth.model.NaverUserModel;
 import com.example.walkingmate.feature.feed.ui.WalkingHomeActivity;
 import com.example.walkingmate.feature.user.data.UserData;
@@ -40,16 +42,6 @@ import com.nhn.android.naverlogin.OAuthLogin;
 import com.nhn.android.naverlogin.OAuthLoginHandler;
 import com.nhn.android.naverlogin.ui.view.OAuthLoginButton;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -71,6 +63,7 @@ public class StartActivity extends AppCompatActivity {
     private static OAuthLogin mOAuthLoginInstance;
     private static Context mContext;
     private NaverUserModel model;
+    private final NaverUserClient naverUserClient = new NaverUserClient();
     private OAuthLoginButton mOAuthLoginButton;
     private SharedPreferences sharedPreferences;
     private static final String PREFS_NAME = "LoginPrefs";
@@ -179,62 +172,37 @@ public class StartActivity extends AppCompatActivity {
                                         db.collection("users").document(inputUsername)
                                                 .update("password", PasswordSecurity.hashPassword(inputPassword));
                                     }
-                                    // 로그인 성공
-                                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                                    editor.putString(PREF_USERID, inputUsername);
-                                    // [보안 리팩토링] 일반 로그인 타입 저장(자동로그인 분기 안정화)
-                                    editor.putString("LoginType", "default");
-                                    editor.putBoolean("ForceLoggedOut", false);
-                                    editor.apply();
+                                    saveLoginSession(inputUsername, "default");
 
-                                    String nickname = document.getString("nickname") != null ? document.getString("nickname") : "";
-                                    String name = document.getString("name") != null ? document.getString("name") : "";
-                                    String birthyear = document.getString("birthyear") != null ? document.getString("birthyear") : "";
-                                    String age = document.getString("age") != null ? document.getString("age") : "";
-                                    String gender = document.getString("gender") != null ? document.getString("gender") : "";
-                                    String profileImagebig = document.getString("profileImagebig") != null ? document.getString("profileImagebig") : "";
-                                    String profileImagesmall = document.getString("profileImagesmall") != null ? document.getString("profileImagesmall") : "";
+                                    UserData userData = StartUserDataFactory.createFromDocument(
+                                            document,
+                                            "",
+                                            "",
+                                            "",
+                                            "",
+                                            ""
+                                    );
                                     String rawAppname = document.getString("appname");
-                                    String appname = resolveAppName(inputUsername, rawAppname, nickname, name);
-                                    String title = document.getString("title") != null ? document.getString("title") : "없음";
-                                    Double reliability = document.getDouble("reliability") != null ? document.getDouble("reliability") : 0.0;
-
                                     if (TextUtils.isEmpty(safeTrim(rawAppname))) {
-                                        db.collection("users").document(inputUsername).update("appname", appname);
+                                        db.collection("users").document(inputUsername).update("appname", userData.appname);
                                     }
 
-                                    // UserData 객체 생성
-                                    UserData userData = new UserData(
-                                            inputUsername, // username
-                                            profileImagebig, // profileImagebig
-                                            profileImagesmall, // profileImagesmall
-                                            appname, // appname
-                                            nickname, // nickname
-                                            name, // name
-                                            age, // 나이 연령대
-                                            gender, // 성별 (M 또는 F)
-                                            birthyear, // birthyear
-                                            title, // title
-                                            reliability // reliability
-                                    );
-
-                                    // UserData 로컬 저장
                                     UserData.saveData(userData, StartActivity.this);
 
-                                    if (profileImagebig != null && !profileImagebig.isEmpty()) {
+                                    if (!TextUtils.isEmpty(userData.profileImagebig)) {
                                         Intent intent = new Intent(StartActivity.this, WalkingHomeActivity.class);
                                         intent.putExtra("userid", inputUsername);
-                                        intent.putExtra("appname", appname);
+                                        intent.putExtra("appname", userData.appname);
                                         startActivity(intent);
                                         finish();
                                     } else {
                                         Intent setprofile = new Intent(StartActivity.this, SettingProfileActivity.class);
-                                        setprofile.putExtra("nickname", nickname);
-                                        setprofile.putExtra("name", name);
-                                        setprofile.putExtra("birthyear", birthyear);
+                                        setprofile.putExtra("nickname", userData.nickname);
+                                        setprofile.putExtra("name", userData.name);
+                                        setprofile.putExtra("birthyear", userData.birthyear);
                                         setprofile.putExtra("userid", inputUsername);
-                                        setprofile.putExtra("age", age);
-                                        setprofile.putExtra("gender", gender);
+                                        setprofile.putExtra("age", userData.age);
+                                        setprofile.putExtra("gender", userData.gender);
                                         setprofile.putExtra("password", inputPassword);
                                         startActivity(setprofile);
                                         finish();
@@ -332,8 +300,8 @@ public class StartActivity extends AppCompatActivity {
     private void getUser(String token) {
         ioExecutor.execute(() -> {
             try {
-                String response = requestNaverUser(token);
-                mainHandler.post(() -> handleNaverUserResponse(response));
+                NaverUserModel naverUser = naverUserClient.fetchUser(token);
+                mainHandler.post(() -> handleNaverUserResponse(naverUser));
             } catch (RuntimeException e) {
                 Log.e(TAG, "Failed to fetch Naver user", e);
                 mainHandler.post(() ->
@@ -342,77 +310,8 @@ public class StartActivity extends AppCompatActivity {
         });
     }
 
-    private String requestNaverUser(String token) {
-        String header = "Bearer " + token;
-        String url = "https://openapi.naver.com/v1/nid/me";
-
-        Map<String, String> requestHeaders = new HashMap<>();
-        requestHeaders.put("Authorization", header);
-        return get(url, requestHeaders);
-    }
-
-    private String get(String url, Map<String, String> requestHeaders) {
-        HttpURLConnection connection = connect(url);
-        try {
-            connection.setRequestMethod("GET");
-            for (Map.Entry<String, String> header : requestHeaders.entrySet()) {
-                connection.setRequestProperty(header.getKey(), header.getValue());
-            }
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                return readBody(connection.getInputStream());
-            } else {
-                return readBody(connection.getErrorStream());
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("API 요청 및 응답 실패");
-        } finally {
-            connection.disconnect();
-        }
-    }
-
-    private HttpURLConnection connect(String apiurl) {
-        try {
-            URL url = new URL(apiurl);
-            return (HttpURLConnection) url.openConnection();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("API URL이 잘못되었습니다. : " + apiurl, e);
-        } catch (IOException e) {
-            throw new RuntimeException("연결을 실패했습니다. : " + apiurl, e);
-        }
-    }
-
-    private String readBody(InputStream body) {
-        InputStreamReader streamReader = new InputStreamReader(body);
-        try (BufferedReader lineReader = new BufferedReader(streamReader)) {
-            StringBuilder responseBody = new StringBuilder();
-            String line;
-            while ((line = lineReader.readLine()) != null) {
-                responseBody.append(line);
-            }
-            return responseBody.toString();
-        } catch (IOException e) {
-            throw new RuntimeException("API 응답을 읽는데 실패했습니다. ", e);
-        }
-    }
-
-    private void handleNaverUserResponse(String response) {
-        try {
-            JSONObject jsonObject = new JSONObject(response);
-            if (jsonObject.getString("resultcode").equals("00")) {
-                JSONObject object = new JSONObject(jsonObject.getString("response"));
-                String id = object.getString("id");
-                String nickname = object.optString("nickname", "");
-                String name = object.optString("name", "");
-                String age = object.optString("age", "");
-                String gender = object.optString("gender", "");
-                String birthyear = object.optString("birthyear", "");
-                model = new NaverUserModel(id, nickname, name, age, gender, birthyear);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
+    private void handleNaverUserResponse(NaverUserModel userModel) {
+        model = userModel;
         if (model == null) {
             Toast.makeText(this, "네이버 사용자 정보를 불러오지 못했습니다.", Toast.LENGTH_SHORT).show();
             return;
@@ -422,30 +321,31 @@ public class StartActivity extends AppCompatActivity {
             @Override
             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                 if (task.getResult().exists()) {
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString(PREF_USERID, model.getId());
-                    // [보안 리팩토링] 네이버 로그인 타입 저장
-                    editor.putString("LoginType", "naver");
-                    editor.putBoolean("ForceLoggedOut", false);
-                    editor.apply();
+                    saveLoginSession(model.getId(), "naver");
 
                     permlist.setVisibility(View.VISIBLE);
                     permlist.setText("접속중...");
-                    String savedAppname = task.getResult().getString("appname");
-                    String effectiveAppname = resolveAppName(task.getResult().getId(), savedAppname, model.getNickname(), model.getName());
-                    UserData userDatatmp = new UserData(task.getResult().getId(), (String) task.getResult().get("profileImagebig"),
-                            (String) task.getResult().get("profileImagesmall"),
-                            effectiveAppname, model.getNickname(), model.getName(), model.getAge(),
-                            model.getGender(), model.getBirthyear(), (String) task.getResult().get("title"),
-                            task.getResult().getDouble("reliability"));
+                    DocumentSnapshot document = task.getResult();
+                    String savedAppname = document.getString("appname");
+                    UserData userDatatmp = StartUserDataFactory.createFromDocument(
+                            document,
+                            model.getNickname(),
+                            model.getName(),
+                            model.getAge(),
+                            model.getGender(),
+                            model.getBirthyear()
+                    );
                     UserData.saveData(userDatatmp, StartActivity.this);
                     if (TextUtils.isEmpty(safeTrim(savedAppname))) {
-                        db.collection("users").document(model.getId()).update("appname", effectiveAppname);
+                        db.collection("users").document(model.getId()).update("appname", userDatatmp.appname);
                     }
 
                     ioExecutor.execute(() -> {
-                        UserData.saveBitmapToJpeg(UserData.GetBitmapfromURL((String) task.getResult().get("profileImagebig")),
-                                UserData.GetBitmapfromURL((String) task.getResult().get("profileImagesmall")), StartActivity.this);
+                        UserData.saveBitmapToJpeg(
+                                UserData.GetBitmapfromURL(document.getString("profileImagebig")),
+                                UserData.GetBitmapfromURL(document.getString("profileImagesmall")),
+                                StartActivity.this
+                        );
                         db.collection("challenge").document(model.getId()).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                             @Override
                             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
@@ -477,12 +377,7 @@ public class StartActivity extends AppCompatActivity {
                     setprofile.putExtra("age", model.getAge());
                     setprofile.putExtra("gender", model.getGender());
 
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString(PREF_USERID, model.getId());
-                    // [보안 리팩토링] 네이버 로그인 타입 저장
-                    editor.putString("LoginType", "naver");
-                    editor.putBoolean("ForceLoggedOut", false);
-                    editor.apply();
+                    saveLoginSession(model.getId(), "naver");
 
                     startActivity(setprofile);
                     finish();
@@ -556,28 +451,12 @@ public class StartActivity extends AppCompatActivity {
         ioExecutor.shutdownNow();
     }
 
-    private String resolveAppName(String userId, String appname, String nickname, String name) {
-        String normalizedAppName = safeTrim(appname);
-        if (!TextUtils.isEmpty(normalizedAppName)) {
-            return normalizedAppName;
-        }
-
-        String normalizedNickname = safeTrim(nickname);
-        if (!TextUtils.isEmpty(normalizedNickname)) {
-            return normalizedNickname;
-        }
-
-        String normalizedName = safeTrim(name);
-        if (!TextUtils.isEmpty(normalizedName)) {
-            return normalizedName;
-        }
-
-        String normalizedUserId = safeTrim(userId);
-        if (!TextUtils.isEmpty(normalizedUserId)) {
-            return normalizedUserId;
-        }
-
-        return "워킹메이트";
+    private void saveLoginSession(String userId, String loginType) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(PREF_USERID, userId);
+        editor.putString("LoginType", loginType);
+        editor.putBoolean("ForceLoggedOut", false);
+        editor.apply();
     }
 
     private String safeTrim(String value) {
