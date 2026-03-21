@@ -103,6 +103,12 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
     ArrayList<String> selectedLocations=new ArrayList<>();
 
     CheckBox[] checkBoxes=new CheckBox[16];
+    private static final int[] TIME_CHECKBOX_IDS = {
+            R.id.radio1, R.id.radio2, R.id.radio3, R.id.radio4,
+            R.id.radio5, R.id.radio6, R.id.radio7, R.id.radio8,
+            R.id.radio9, R.id.radio10, R.id.radio11, R.id.radio12,
+            R.id.radio13, R.id.radio14, R.id.radio15, R.id.radio16
+    };
 
     Spinner sex,age;
 
@@ -193,21 +199,7 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         });
 
 
-        checkBoxes[0]=rootview.findViewById(R.id.radio1);
-        checkBoxes[0].setChecked(true);
-        selectedLocations.add(checkBoxes[0].getText().toString());
-
-        checkBoxes[1]=rootview.findViewById(R.id.radio2);checkBoxes[8]=rootview.findViewById(R.id.radio9);
-        checkBoxes[2]=rootview.findViewById(R.id.radio3);checkBoxes[9]=rootview.findViewById(R.id.radio10);
-        checkBoxes[3]=rootview.findViewById(R.id.radio4);checkBoxes[10]=rootview.findViewById(R.id.radio11);
-        checkBoxes[4]=rootview.findViewById(R.id.radio5);checkBoxes[11]=rootview.findViewById(R.id.radio12);
-        checkBoxes[5]=rootview.findViewById(R.id.radio6);checkBoxes[12]=rootview.findViewById(R.id.radio13);
-        checkBoxes[6]=rootview.findViewById(R.id.radio7);checkBoxes[13]=rootview.findViewById(R.id.radio14);
-        checkBoxes[7]=rootview.findViewById(R.id.radio8);checkBoxes[14]=rootview.findViewById(R.id.radio15);
-        checkBoxes[15]=rootview.findViewById(R.id.radio16);
-        for(CheckBox checkBox:checkBoxes){
-            checkBox.setOnClickListener(checkboxlistener);
-        }
+        bindTimeCheckBoxes(rootview);
 
         mateListView=rootview.findViewById(R.id.matelist);
         addMatePostButton=rootview.findViewById(R.id.add_matelist);
@@ -442,6 +434,16 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         }
         return true;
 
+    }
+
+    private void bindTimeCheckBoxes(View rootView) {
+        for (int i = 0; i < TIME_CHECKBOX_IDS.length; i++) {
+            checkBoxes[i] = rootView.findViewById(TIME_CHECKBOX_IDS[i]);
+            checkBoxes[i].setOnClickListener(checkboxlistener);
+        }
+
+        checkBoxes[0].setChecked(true);
+        selectedLocations.add(checkBoxes[0].getText().toString());
     }
 
 
