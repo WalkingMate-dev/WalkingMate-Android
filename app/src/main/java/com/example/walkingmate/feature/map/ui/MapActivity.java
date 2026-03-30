@@ -115,6 +115,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     CollectionReference challenge=fb.collection("challenge");
 
     private static final int ACCESS_LOCATION_PERMISSION_REQUEST_CODE = 100;
+    private static final String WALKED_ROUTES_PREF_NAME = "WalkedRoutes";
 
     private NaverMap naverMap;
     private double lat, lon;
@@ -433,7 +434,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
     private void saveWalkedRoute(ArrayList<LatLng> route) {
-        SharedPreferences sharedPreferences = getSharedPreferences("WalkedRoutes", MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences(WALKED_ROUTES_PREF_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         Gson gson = new Gson();
         ArrayList<ArrayList<LatLng>> allRoutes = loadAllWalkedRoutes();
@@ -448,7 +449,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
     private ArrayList<ArrayList<LatLng>> loadAllWalkedRoutes() {
-        SharedPreferences sharedPreferences = getSharedPreferences("WalkedRoutes", MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences(WALKED_ROUTES_PREF_NAME, MODE_PRIVATE);
         Gson gson = new Gson();
         String json = sharedPreferences.getString("allRoutes", null);
         Type type = new TypeToken<ArrayList<ArrayList<LatLng>>>() {}.getType();
