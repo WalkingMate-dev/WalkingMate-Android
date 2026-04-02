@@ -116,6 +116,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private static final int ACCESS_LOCATION_PERMISSION_REQUEST_CODE = 100;
     private static final String WALKED_ROUTES_PREF_NAME = "WalkedRoutes";
+    private static final String ALL_ROUTES_KEY = "allRoutes";
+    private static final String BPM_PREF_NAME = "BPM_PREFS";
+    private static final String SAVED_BPM_KEY = "saved_bpm";
 
     private NaverMap naverMap;
     private double lat, lon;
@@ -443,7 +446,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
         allRoutes.add(route);
         String json = gson.toJson(allRoutes);
-        editor.putString("allRoutes", json);
+        editor.putString(ALL_ROUTES_KEY, json);
         editor.apply();
     }
 
@@ -451,7 +454,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private ArrayList<ArrayList<LatLng>> loadAllWalkedRoutes() {
         SharedPreferences sharedPreferences = getSharedPreferences(WALKED_ROUTES_PREF_NAME, MODE_PRIVATE);
         Gson gson = new Gson();
-        String json = sharedPreferences.getString("allRoutes", null);
+        String json = sharedPreferences.getString(ALL_ROUTES_KEY, null);
         Type type = new TypeToken<ArrayList<ArrayList<LatLng>>>() {}.getType();
         return gson.fromJson(json, type);
     }
@@ -779,13 +782,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     private int getSavedBpm() {
-        SharedPreferences sharedPreferences = getSharedPreferences("BPM_PREFS", Context.MODE_PRIVATE);
-        return Math.round(sharedPreferences.getFloat("saved_bpm", 0f));
+        SharedPreferences sharedPreferences = getSharedPreferences(BPM_PREF_NAME, Context.MODE_PRIVATE);
+        return Math.round(sharedPreferences.getFloat(SAVED_BPM_KEY, 0f));
     }
 
     private void resetSavedBpm() {
-        SharedPreferences sharedPreferences = getSharedPreferences("BPM_PREFS", Context.MODE_PRIVATE);
-        sharedPreferences.edit().putFloat("saved_bpm", 0f).apply();
+        SharedPreferences sharedPreferences = getSharedPreferences(BPM_PREF_NAME, Context.MODE_PRIVATE);
+        sharedPreferences.edit().putFloat(SAVED_BPM_KEY, 0f).apply();
     }
 
     private void refreshIntervalControlUi() {
