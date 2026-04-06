@@ -131,6 +131,9 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
     Spinner inlineSearchModeSpinner;
     EditText inlineSearchInput;
     ImageButton inlineSearchApplyBtn, inlineSearchClearBtn;
+    View searchLayout;
+    View pagingLayout;
+    View inlineSearchLayout;
     String inlineSearchKeyword = "";
     int inlineSearchMode = 0; // 0: writer, 1: title
 
@@ -182,6 +185,7 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         userData=UserData.loadData(getActivity());
 
         searchopenbtn=rootview.findViewById(R.id.search_matefrag);
+        searchLayout=rootview.findViewById(R.id.searchlayout_matefrag);
         searchopenbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -194,7 +198,7 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
                     visible=View.VISIBLE;
                     searchopen=true;
                 }
-                rootview.findViewById(R.id.searchlayout_matefrag).setVisibility(visible);
+                searchLayout.setVisibility(visible);
             }
         });
 
@@ -218,6 +222,8 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         inlineSearchInput=rootview.findViewById(R.id.et_inline_search_mate);
         inlineSearchApplyBtn=rootview.findViewById(R.id.btn_inline_search_apply);
         inlineSearchClearBtn=rootview.findViewById(R.id.btn_inline_search_clear);
+        pagingLayout=rootview.findViewById(R.id.paging_matelist);
+        inlineSearchLayout=rootview.findViewById(R.id.inline_search_matelist);
 
         ArrayAdapter<String> searchModeAdapter = new ArrayAdapter<>(
                 requireContext(),
@@ -298,13 +304,13 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
                         searchopenbtn.performClick();
                     }
                     searchopenbtn.setVisibility(View.INVISIBLE);
-                    rootview.findViewById(R.id.paging_matelist).setVisibility(View.GONE);
-                    rootview.findViewById(R.id.inline_search_matelist).setVisibility(View.GONE);
+                    pagingLayout.setVisibility(View.GONE);
+                    inlineSearchLayout.setVisibility(View.GONE);
                 }
                 else{
                     searchopenbtn.setVisibility(View.VISIBLE);
-                    rootview.findViewById(R.id.paging_matelist).setVisibility(View.VISIBLE);
-                    rootview.findViewById(R.id.inline_search_matelist).setVisibility(View.VISIBLE);
+                    pagingLayout.setVisibility(View.VISIBLE);
+                    inlineSearchLayout.setVisibility(View.VISIBLE);
                 }
                 switch (i){
                     case 2:
