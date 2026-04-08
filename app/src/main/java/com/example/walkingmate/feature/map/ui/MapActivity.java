@@ -148,7 +148,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
     ImageButton backBtn, endBtn, goalBtn, musicBtn;
-    TextView disTxt, walkTxt, runtimeTxt;
+    TextView disTxt, walkTxt, runtimeTxt, goalStepsText;
 
     LinearLayout MapLayout;
     PathOverlay pathOverlay;
@@ -178,7 +178,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         runtimeTxt = findViewById(R.id.time_tracking);
         updateDistanceText();
 
-        TextView goalStepsText = findViewById(R.id.goal_steps_text);
+        goalStepsText = findViewById(R.id.goal_steps_text);
         goalStepsText.setVisibility(View.GONE);
 
         slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
@@ -718,7 +718,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         finish();
     }
     private void setGoalSteps(int goalSteps) {
-        TextView goalStepsText = findViewById(R.id.goal_steps_text);
         goalStepsText.setText("목표 걸음 수: " + goalSteps + " 보");
 
         // 애니메이션 로드
