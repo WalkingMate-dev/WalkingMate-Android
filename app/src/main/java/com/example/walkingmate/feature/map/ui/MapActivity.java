@@ -761,7 +761,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
     private void checkGoalCompletion() {
-        TextView walkTxt = findViewById(R.id.walk_tracking);
         int currentSteps = Integer.parseInt(walkTxt.getText().toString());
 
         if (currentSteps >= goalSteps && goalSteps > 0) { // 목표 설정 후 확인
