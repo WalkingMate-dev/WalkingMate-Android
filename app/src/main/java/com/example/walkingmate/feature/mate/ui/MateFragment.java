@@ -165,19 +165,7 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
 
 
 
-        startcalendar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getstartResult.launch(new Intent(getActivity(),DateSelector.class));
-            }
-        });
-
-        endcalendar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getendResult.launch(new Intent(getActivity(),DateSelector.class));
-            }
-        });
+        setupDatePickers();
 
 
 
@@ -450,6 +438,22 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
 
         checkBoxes[0].setChecked(true);
         selectedLocations.add(checkBoxes[0].getText().toString());
+    }
+
+    private void setupDatePickers() {
+        startcalendar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getstartResult.launch(new Intent(getActivity(),DateSelector.class));
+            }
+        });
+
+        endcalendar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getendResult.launch(new Intent(getActivity(),DateSelector.class));
+            }
+        });
     }
 
 
