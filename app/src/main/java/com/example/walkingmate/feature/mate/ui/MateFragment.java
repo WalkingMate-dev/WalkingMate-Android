@@ -118,6 +118,7 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
     EditText syear,smonth,sday,eyear,emonth,eday;
 
     Button clearSetting;
+    Button finishSettingButton;
 
     String startDateFilter,endDateFilter;
 
@@ -348,7 +349,8 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
             }
         });
 
-        rootview.findViewById(R.id.finishSetting_matefrag).setOnClickListener(new View.OnClickListener() {
+        finishSettingButton = rootview.findViewById(R.id.finishSetting_matefrag);
+        finishSettingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String tmps,tmpe;

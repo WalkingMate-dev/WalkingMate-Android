@@ -170,16 +170,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_map);
 
 
-        backBtn = findViewById(R.id.back_tracing);
-        endBtn = findViewById(R.id.endBtn);
-
-        disTxt = findViewById(R.id.displacement_walk);
-        walkTxt = findViewById(R.id.walk_tracking);
-        runtimeTxt = findViewById(R.id.time_tracking);
+        bindTrackingViews();
         updateDistanceText();
-
-        goalStepsText = findViewById(R.id.goal_steps_text);
-        goalStepsText.setVisibility(View.GONE);
 
         slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
         slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
@@ -717,6 +709,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         startActivity(gofeed);
         finish();
     }
+
+    private void bindTrackingViews() {
+        backBtn = findViewById(R.id.back_tracing);
+        endBtn = findViewById(R.id.endBtn);
+        disTxt = findViewById(R.id.displacement_walk);
+        walkTxt = findViewById(R.id.walk_tracking);
+        runtimeTxt = findViewById(R.id.time_tracking);
+        goalStepsText = findViewById(R.id.goal_steps_text);
+        goalStepsText.setVisibility(View.GONE);
+    }
+
     private void setGoalSteps(int goalSteps) {
         goalStepsText.setText("목표 걸음 수: " + goalSteps + " 보");
 
