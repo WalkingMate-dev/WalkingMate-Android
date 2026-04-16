@@ -1,9 +1,5 @@
 package com.example.walkingmate.feature.map.ui;
-import android.content.SharedPreferences;
 import android.text.TextUtils;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.Type;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -61,6 +57,7 @@ import com.example.walkingmate.*;
 import com.example.walkingmate.core.constants.Constants;
 import com.example.walkingmate.feature.feed.data.FeedData;
 import com.example.walkingmate.feature.feed.ui.WalkingHomeActivity;
+import com.example.walkingmate.feature.map.data.WalkedRouteStore;
 import com.example.walkingmate.feature.misc.ui.ChallengeActivity;
 import com.example.walkingmate.feature.music.service.MusicService;
 import com.example.walkingmate.feature.music.ui.MainMusicActivity;
@@ -68,6 +65,7 @@ import com.example.walkingmate.feature.user.data.UserData;
 import com.example.walkingmate.feature.user.ui.AppInfoActivity;
 import com.example.walkingmate.feature.user.ui.HelpInfoActivity;
 import com.example.walkingmate.feature.user.ui.ManageFriendActivity;
+import com.example.walkingmate.feature.walk.data.BpmPreferenceStore;
 import com.example.walkingmate.feature.walk.service.LocationService;
 import com.example.walkingmate.feature.walk.service.StepCounterService;
 import com.example.walkingmate.feature.walk.service.TimecheckingService;
@@ -115,10 +113,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     CollectionReference challenge=fb.collection("challenge");
 
     private static final int ACCESS_LOCATION_PERMISSION_REQUEST_CODE = 100;
-    private static final String WALKED_ROUTES_PREF_NAME = "WalkedRoutes";
-    private static final String ALL_ROUTES_KEY = "allRoutes";
-    private static final String BPM_PREF_NAME = "BPM_PREFS";
-    private static final String SAVED_BPM_KEY = "saved_bpm";
 
     private NaverMap naverMap;
     private double lat, lon;
@@ -162,6 +156,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private boolean isExpanded = false;
     private Animation slideUpAnimation;
     private Animation slideDownAnimation;
+    private WalkedRouteStore walkedRouteStore;
+    private BpmPreferenceStore bpmPreferenceStore;
 
 
     @Override
@@ -169,6 +165,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
+        walkedRouteStore = new WalkedRouteStore(this);
+        bpmPreferenceStore = new BpmPreferenceStore(this);
 
         bindTrackingViews();
         updateDistanceText();
@@ -191,7 +189,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         musicBtn = findViewById(R.id.musicBtn); // 음악 버튼 참조 가져오기
         intervalControlBtn = findViewById(R.id.btn_interval_control);
-        MyBPM = getSavedBpm();
+        MyBPM = bpmPreferenceStore.getSavedBpmRounded();
         refreshIntervalControlUi();
         intervalControlBtn.setOnClickListener(v -> {
             if (isIntervalActive) {
@@ -202,7 +200,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 return;
             }
 
-            int savedBpm = getSavedBpm();
+            int savedBpm = bpmPreferenceStore.getSavedBpmRounded();
             if (savedBpm <= 0) {
                 pendingIntervalAfterMeasure = true;
                 Intent measureIntent = new Intent(MapActivity.this, MeasureSpeedActivity.class);
@@ -304,7 +302,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Button btn1m30s = dialogView.findViewById(R.id.btn_1m30s);
         Button btnRemeasure = dialogView.findViewById(R.id.btn_remeasure_bpm);
         TextView tvCurrentBpm = dialogView.findViewById(R.id.tv_current_bpm);
-        tvCurrentBpm.setText("현재 BPM: " + getSavedBpm());
+        tvCurrentBpm.setText("현재 BPM: " + bpmPreferenceStore.getSavedBpmRounded());
 
         AlertDialog intervalDialog = builder.create();
 
@@ -333,7 +331,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             intervalDialog.dismiss();
             isIntervalActive = false;
             refreshIntervalControlUi();
-            resetSavedBpm();
+            bpmPreferenceStore.resetSavedBpm();
             pendingIntervalAfterMeasure = true;
             Intent measureIntent = new Intent(MapActivity.this, MeasureSpeedActivity.class);
             startActivity(measureIntent);
@@ -428,30 +426,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
 
 
-    private void saveWalkedRoute(ArrayList<LatLng> route) {
-        SharedPreferences sharedPreferences = getSharedPreferences(WALKED_ROUTES_PREF_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        Gson gson = new Gson();
-        ArrayList<ArrayList<LatLng>> allRoutes = loadAllWalkedRoutes();
-        if (allRoutes == null) {
-            allRoutes = new ArrayList<>();
-        }
-        allRoutes.add(route);
-        String json = gson.toJson(allRoutes);
-        editor.putString(ALL_ROUTES_KEY, json);
-        editor.apply();
-    }
-
-
-    private ArrayList<ArrayList<LatLng>> loadAllWalkedRoutes() {
-        SharedPreferences sharedPreferences = getSharedPreferences(WALKED_ROUTES_PREF_NAME, MODE_PRIVATE);
-        Gson gson = new Gson();
-        String json = sharedPreferences.getString(ALL_ROUTES_KEY, null);
-        Type type = new TypeToken<ArrayList<ArrayList<LatLng>>>() {}.getType();
-        return gson.fromJson(json, type);
-    }
-
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -485,7 +459,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         // Load and display the saved route
         naverMap.setLocationTrackingMode(LocationTrackingMode.NoFollow);
-        ArrayList<ArrayList<LatLng>> allRoutes = loadAllWalkedRoutes();
+        ArrayList<ArrayList<LatLng>> allRoutes = walkedRouteStore.loadRoutes();
         if (allRoutes != null && !allRoutes.isEmpty()) {
             for (ArrayList<LatLng> route : allRoutes) {
                 if (route != null && !route.isEmpty()) {
@@ -670,7 +644,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         timecheck[1] = getTime();
 
         if (saveRouteOnMap) {
-            saveWalkedRoute(coordList);
+            walkedRouteStore.saveRoute(coordList);
             while (coordList.size() > 5000) {
                 ArrayList<LatLng> tmp = new ArrayList<>();
                 Log.d("메이트루트", coordList.size() + "");
@@ -782,16 +756,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         return getTime;
     }
 
-    private int getSavedBpm() {
-        SharedPreferences sharedPreferences = getSharedPreferences(BPM_PREF_NAME, Context.MODE_PRIVATE);
-        return Math.round(sharedPreferences.getFloat(SAVED_BPM_KEY, 0f));
-    }
-
-    private void resetSavedBpm() {
-        SharedPreferences sharedPreferences = getSharedPreferences(BPM_PREF_NAME, Context.MODE_PRIVATE);
-        sharedPreferences.edit().putFloat(SAVED_BPM_KEY, 0f).apply();
-    }
-
     private void refreshIntervalControlUi() {
         if (intervalControlBtn == null) {
             return;
@@ -846,7 +810,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         stopLocationService();
 
         if (pendingIntervalAfterMeasure) {
-            int savedBpm = getSavedBpm();
+            int savedBpm = bpmPreferenceStore.getSavedBpmRounded();
             if (savedBpm > 0) {
                 pendingIntervalAfterMeasure = false;
                 MyBPM = savedBpm;
