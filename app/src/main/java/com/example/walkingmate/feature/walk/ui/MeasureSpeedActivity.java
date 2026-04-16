@@ -1,6 +1,5 @@
 package com.example.walkingmate.feature.walk.ui;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -14,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.example.walkingmate.R;
+import com.example.walkingmate.feature.walk.data.BpmPreferenceStore;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -30,12 +30,14 @@ public class MeasureSpeedActivity extends AppCompatActivity implements SensorEve
     private Button btnStartWalking;
     private Button btnDoneMeasure;
     private int stepsDuringMeasurement = 0;
+    private BpmPreferenceStore bpmPreferenceStore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_measure_speed);
 
+        bpmPreferenceStore = new BpmPreferenceStore(this);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
 
@@ -102,17 +104,11 @@ public class MeasureSpeedActivity extends AppCompatActivity implements SensorEve
     }
 
     private void saveBPM() {
-        // SharedPreferences에 BPM 값 저장
-        SharedPreferences sharedPreferences = getSharedPreferences("BPM_PREFS", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putFloat("saved_bpm", (float) bpm);
-        editor.apply(); // 비동기적으로 저장
+        bpmPreferenceStore.saveBpm((float) bpm);
     }
 
     private void showBPM() {
-        // SharedPreferences에서 저장된 BPM 값 불러오기
-        SharedPreferences sharedPreferences = getSharedPreferences("BPM_PREFS", Context.MODE_PRIVATE);
-        float savedBpm = sharedPreferences.getFloat("saved_bpm", 0); // 기본값은 0
+        float savedBpm = bpmPreferenceStore.getSavedBpm();
         tvBPM.setText("측정된 BPM: " + savedBpm);
     }
 
