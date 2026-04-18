@@ -109,6 +109,8 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
             R.id.radio9, R.id.radio10, R.id.radio11, R.id.radio12,
             R.id.radio13, R.id.radio14, R.id.radio15, R.id.radio16
     };
+    private static final String DEFAULT_START_DATE_FILTER = "1000/01/01";
+    private static final String DEFAULT_END_DATE_FILTER = "9999/12/31";
 
     Spinner sex,age;
 
@@ -146,8 +148,8 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         swipeRefreshLayout=rootview.findViewById(R.id.refresh_matelist);
         swipeRefreshLayout.setOnRefreshListener(this::onRefresh);
 
-        startDateFilter="1000/01/01";
-        endDateFilter="9999/12/31";
+        startDateFilter=DEFAULT_START_DATE_FILTER;
+        endDateFilter=DEFAULT_END_DATE_FILTER;
 
         sex=rootview.findViewById(R.id.spinner_sex_matefrag);
         age=rootview.findViewById(R.id.spinner_age_matefrag);
@@ -353,33 +355,7 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         finishSettingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String tmps,tmpe;
-                tmps=String.format("%s/%s/%s",syear.getText().toString(),smonth.getText().toString(),sday.getText().toString());
-                tmpe=String.format("%s/%s/%s",eyear.getText().toString(),emonth.getText().toString(),eday.getText().toString());
-                //비어있으면 제한선 없는것으로 만들음
-                Log.d("날짜 체크",tmps+","+tmpe);
-                if(tmps.equals("//")){
-                    tmps="1000/01/01";
-                }
-                if(tmpe.equals("//")){
-                    tmpe="9999/12/31";
-                }
-                if(!checkdate(tmps,tmpe)){
-                    Toast.makeText(getActivity(),"잘못된 날짜를 입력하셨습니다.",Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                else{
-                    startDateFilter=tmps;
-                    endDateFilter=tmpe;
-                }
-
-                if(!isLoadingMore){
-                    Toast.makeText(getActivity(),"설정 완료되었습니다.",Toast.LENGTH_SHORT).show();
-                    isLoadingMore=true;
-                    refreshs();
-                }
-
-
+                applyFilterSettings();
             }
         });
 
@@ -387,22 +363,7 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         clearSetting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startDateFilter="1000/01/01";
-                endDateFilter="9999/12/31";
-                for(CheckBox checkBox:checkBoxes){
-                    checkBox.setChecked(false);
-                }
-                checkBoxes[0].setChecked(true);
-                selectedLocations.clear();
-                selectedLocations.add("전체");
-                syear.setText("");
-                smonth.setText("");
-                sday.setText("");
-                eyear.setText("");
-                emonth.setText("");
-                eday.setText("");
-                sex.setSelection(0);
-                age.setSelection(0);
+                resetFilterSettings();
             }
         });
 
@@ -456,6 +417,58 @@ public class MateFragment extends Fragment implements SwipeRefreshLayout.OnRefre
                 getendResult.launch(new Intent(getActivity(),DateSelector.class));
             }
         });
+    }
+
+    private void applyFilterSettings() {
+        String startInputDate = buildDateInput(syear, smonth, sday);
+        String endInputDate = buildDateInput(eyear, emonth, eday);
+        String normalizedStartDate = normalizeDateFilter(startInputDate, DEFAULT_START_DATE_FILTER);
+        String normalizedEndDate = normalizeDateFilter(endInputDate, DEFAULT_END_DATE_FILTER);
+
+        Log.d("날짜 체크", normalizedStartDate + "," + normalizedEndDate);
+        if(!checkdate(normalizedStartDate, normalizedEndDate)){
+            Toast.makeText(getActivity(),"잘못된 날짜를 입력하셨습니다.",Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        startDateFilter = normalizedStartDate;
+        endDateFilter = normalizedEndDate;
+
+        if(!isLoadingMore){
+            Toast.makeText(getActivity(),"설정 완료되었습니다.",Toast.LENGTH_SHORT).show();
+            isLoadingMore=true;
+            refreshs();
+        }
+    }
+
+    private String buildDateInput(EditText year, EditText month, EditText day) {
+        return String.format("%s/%s/%s",
+                year.getText().toString(),
+                month.getText().toString(),
+                day.getText().toString());
+    }
+
+    private String normalizeDateFilter(String inputDate, String defaultDate) {
+        return inputDate.equals("//") ? defaultDate : inputDate;
+    }
+
+    private void resetFilterSettings() {
+        startDateFilter = DEFAULT_START_DATE_FILTER;
+        endDateFilter = DEFAULT_END_DATE_FILTER;
+        for(CheckBox checkBox:checkBoxes){
+            checkBox.setChecked(false);
+        }
+        checkBoxes[0].setChecked(true);
+        selectedLocations.clear();
+        selectedLocations.add("전체");
+        syear.setText("");
+        smonth.setText("");
+        sday.setText("");
+        eyear.setText("");
+        emonth.setText("");
+        eday.setText("");
+        sex.setSelection(0);
+        age.setSelection(0);
     }
 
 
