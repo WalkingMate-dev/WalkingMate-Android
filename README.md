@@ -109,3 +109,7 @@ WalkingMate/
   settings.gradle
   gradlew
 ```
+
+## 수행 확인서
+
+![alt text](image.png)
